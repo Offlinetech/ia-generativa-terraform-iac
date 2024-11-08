@@ -1,1 +1,104 @@
 name: Create Terraform Remote State
+
+on: 
+  push:
+    branches: [dev]
+  workflow_dispatch:
+
+env:
+  WORKING_DIRECTORY: ./
+
+permissions: read-all
+
+jobs:
+
+  deploy-azure-infra-terraform:
+    name: Deploy to Azure with Terraform
+    runs-on: ubuntu-latest
+    permissions: write-all
+    environment: Development
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+
+    steps:
+      # Checkout the repository to the GitHub Actions runner
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+
+      # Login to Azure with OIDC
+      - name: Azure login
+        uses: azure/login@v2.2.0
+        with:
+          client-id: ${{ secrets.CLIENT_ID }}
+          tenant-id: ${{ secrets.TENANT_ID }}
+          subscription-id: ${{ secrets.SUBSCRIPTION_ID }}
+
+      - name: Create Terraform backend state storage
+        uses: Azure/cli@v2.1.0
+        with:
+          # Azure CLI version to be used to execute the script. If not provided, latest version is used
+          # azcliversion: 2.34.1 # optional, default is agentazcliversion
+          inlineScript: |
+            az account show
+
+            echo "🎯 Setting default subscription for: " ${{ secrets.SUBSCRIPTION_ID }}
+            az account set --subscription ${{ secrets.SUBSCRIPTION_ID }}
+
+            echo "🎯 Getting resource group named: " ${{ vars.TF_RESOURCE_GROUP }}
+            RG_EXISTS=$(az group exists --name ${{ vars.TF_RESOURCE_GROUP }} )
+            if [ $RG_EXISTS == "false" ]; then
+              echo "Resource group not found, creating... "
+              az group create --name ${{ vars.TF_RESOURCE_GROUP }} --location ${{ vars.LOCATION }}
+            fi
+            RESOURCE_GROUP_ID=$(az group show -n ${{ vars.TF_RESOURCE_GROUP }} -o tsv --query id)
+
+            echo "🎯 Getting storage account named: " ${{ vars.TF_STORAGE_ACCOUNT }}
+            STORAGE_ACCOUNT_NOT_FOUND=$(az storage account check-name --name ${{ vars.TF_STORAGE_ACCOUNT }}  --query nameAvailable)
+            if [ $STORAGE_ACCOUNT_NOT_FOUND == "true" ]; then
+              echo ""
+              echo "Storage account not found. Creating..."
+              az storage account create --resource-group ${{ vars.TF_RESOURCE_GROUP }} --name ${{ vars.TF_STORAGE_ACCOUNT }}  --sku Standard_LRS --encryption-services blob
+            fi
+            STORAGE_ACCOUNT=$(az storage account show --name ${{ vars.TF_STORAGE_ACCOUNT }} -o tsv --query id)
+
+            echo "🎯 Getting storage account container named: " ${{ vars.BACKEND_CONTAINER }}
+            STORAGE_COUNTAINER_EXISTS=$(az storage container exists --name ${{ vars.BACKEND_CONTAINER }} --account-name ${{ vars.TF_STORAGE_ACCOUNT }}  --query exists)
+            if [ $STORAGE_COUNTAINER_EXISTS == "false" ]; then
+              echo ""
+              echo "Blob container not found. Creating..."
+              az storage container create --name ${{ vars.BACKEND_CONTAINER }} --account-name ${{ vars.TF_STORAGE_ACCOUNT }}
+            fi
+            STORAGE_CONTAINER=$(az storage account show --name ${{ vars.TF_STORAGE_ACCOUNT }} -o tsv --query primaryEndpoints.blob)${{ vars.BACKEND_CONTAINER }}
+
+            echo "🎯 Getting storage account key..."
+            STORAGE_ACCOUNT_KEY=$(az storage account keys list --resource-group ${{ vars.TF_RESOURCE_GROUP }}  --account-name ${{ vars.TF_STORAGE_ACCOUNT }} --query "[0].value" -o tsv)
+
+            echo "🎯 Getting storage connection string..."
+            STORAGE_ACCOUNT_CONNECTION_STRING=$(az storage account show-connection-string --resource-group ${{ vars.TF_RESOURCE_GROUP }}  --name ${{ vars.TF_STORAGE_ACCOUNT }} --query "connectionString"  -o tsv)
+            echo $STORAGE_ACCOUNT_CONNECTION_STRING
+
+            echo "🎯 Getting storage blob named: " ${{ vars.BACKEND_KEY }}
+            STORAGE_BLOB_EXISTS=$(az storage blob exists --name ${{ vars.BACKEND_KEY }} --account-name ${{ vars.TF_STORAGE_ACCOUNT }} --account-key $STORAGE_ACCOUNT_KEY --query exists)
+            if [ $STORAGE_BLOB_EXISTS == "false" ]; then
+              echo ""
+              echo "Storage blob not found. Creating..."
+
+            # generate backend.tf file
+            cd ${{ env.WORKING_DIRECTOR }}
+            cat <<EOT > terraform.tfstate
+            terraform {
+              backend "azurerm" {
+                resource_group_name   = "${{ vars.TF_RESOURCE_GROUP }}"
+                storage_account_name  = "${{ vars.TF_STORAGE_ACCOUNT }}"
+                container_name        = "${{ vars.BACKEND_CONTAINER }}"
+                key                   = "${{ vars.BACKEND_KEY }}"
+              }
+            }
+            EOT
+
+            cat terraform.tfstate
+
+
