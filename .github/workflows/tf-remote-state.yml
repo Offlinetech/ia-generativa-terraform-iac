@@ -81,25 +81,24 @@ jobs:
             echo $STORAGE_ACCOUNT_CONNECTION_STRING
 
             echo "🎯 Getting storage blob named: " ${{ vars.TF_BACKEND_KEY }}
-            STORAGE_BLOB_EXISTS=$(az storage blob exists --connection-string $STORAGE_ACCOUNT_CONNECTION_STRING --auth-mode login --container-name ${{ vars.TF_BACKEND_CONTAINER }} --name ${{ vars.TF_BACKEND_KEY }})
- 
-            # if [ $STORAGE_BLOB_EXISTS == "false" ]; then
-            #   echo ""
-            #   echo "Storage blob not found. Creating..."
+            STORAGE_BLOB_EXISTS=$(az storage blob exists --auth-mode login --container-name ${{ vars.TF_BACKEND_CONTAINER }} --name ${{ vars.TF_BACKEND_KEY }})
+            if [ $STORAGE_BLOB_EXISTS == "false" ]; then
+              echo ""
+              echo "Storage blob not found. Creating..."
 
-            # # generate backend.tf file
-            # cd ${{ env.WORKING_DIRECTOR }}
-            # cat <<EOT > terraform.tfstate
-            # terraform {
-            #   backend "azurerm" {
-            #     resource_group_name   = "${{ vars.TF_RESOURCE_GROUP }}"
-            #     storage_account_name  = "${{ vars.TF_STORAGE_ACCOUNT }}"
-            #     container_name        = "${{ vars.TF_BACKEND_CONTAINER }}"
-            #     key                   = "${{ vars.BACKEND_KEY }}"
-            #   }
-            # }
-            # EOT
+            # generate backend.tf file
+            cd ${{ env.WORKING_DIRECTOR }}
+            cat <<EOT > terraform.tfstate
+            terraform {
+              backend "azurerm" {
+                resource_group_name   = "${{ vars.TF_RESOURCE_GROUP }}"
+                storage_account_name  = "${{ vars.TF_STORAGE_ACCOUNT }}"
+                container_name        = "${{ vars.TF_BACKEND_CONTAINER }}"
+                key                   = "${{ vars.BACKEND_KEY }}"
+              }
+            }
+            EOT
 
-            # cat terraform.tfstate
+            cat terraform.tfstate
 
 
