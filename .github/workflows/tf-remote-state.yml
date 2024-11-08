@@ -64,14 +64,14 @@ jobs:
             fi
             STORAGE_ACCOUNT=$(az storage account show --name ${{ vars.TF_STORAGE_ACCOUNT }} -o tsv --query id)
 
-            echo "🎯 Getting storage account container named: " ${{ vars.BACKEND_CONTAINER }}
-            STORAGE_COUNTAINER_EXISTS=$(az storage container exists --name ${{ vars.BACKEND_CONTAINER }} --account-name ${{ vars.TF_STORAGE_ACCOUNT }}  --query exists)
+            echo "🎯 Getting storage account container named: " ${{ vars.TF_BACKEND_CONTAINER }}
+            STORAGE_COUNTAINER_EXISTS=$(az storage container exists --name ${{ vars.TF_BACKEND_CONTAINER }} --account-name ${{ vars.TF_STORAGE_ACCOUNT }}  --query exists)
             if [ $STORAGE_COUNTAINER_EXISTS == "false" ]; then
               echo ""
               echo "Blob container not found. Creating..."
-              az storage container create --name ${{ vars.BACKEND_CONTAINER }} --account-name ${{ vars.TF_STORAGE_ACCOUNT }}
+              az storage container create --name ${{ vars.TF_BACKEND_CONTAINER }} --account-name ${{ vars.TF_STORAGE_ACCOUNT }}
             fi
-            STORAGE_CONTAINER=$(az storage account show --name ${{ vars.TF_STORAGE_ACCOUNT }} -o tsv --query primaryEndpoints.blob)${{ vars.BACKEND_CONTAINER }}
+            STORAGE_CONTAINER=$(az storage account show --name ${{ vars.TF_STORAGE_ACCOUNT }} -o tsv --query primaryEndpoints.blob)${{ vars.TF_BACKEND_CONTAINER }}
 
             echo "🎯 Getting storage account key..."
             STORAGE_ACCOUNT_KEY=$(az storage account keys list --resource-group ${{ vars.TF_RESOURCE_GROUP }}  --account-name ${{ vars.TF_STORAGE_ACCOUNT }} --query "[0].value" -o tsv)
@@ -93,7 +93,7 @@ jobs:
               backend "azurerm" {
                 resource_group_name   = "${{ vars.TF_RESOURCE_GROUP }}"
                 storage_account_name  = "${{ vars.TF_STORAGE_ACCOUNT }}"
-                container_name        = "${{ vars.BACKEND_CONTAINER }}"
+                container_name        = "${{ vars.TF_BACKEND_CONTAINER }}"
                 key                   = "${{ vars.BACKEND_KEY }}"
               }
             }
