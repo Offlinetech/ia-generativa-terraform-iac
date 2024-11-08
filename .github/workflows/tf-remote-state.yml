@@ -2,7 +2,7 @@ name: Create Terraform Remote State
 
 on: 
   push:
-    branches: [dev]
+#   branches: [dev]
   workflow_dispatch:
 
 env:
