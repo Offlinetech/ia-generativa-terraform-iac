@@ -3,7 +3,6 @@ name: Create Infra with Terraforn
 on: 
     push:
       branches: [dev]
-    workflow_dispatch:
 
 env:
   WORKING_DIRECTORY: ./
@@ -22,7 +21,7 @@ jobs:
         id: checkov
         uses: bridgecrewio/checkov-action@master
         with:
-          directory: https://github.com/Offlinetech/ia-generativa-terraform-modules # ${{ env.WORKING_DIRECTORY }}
+          directory: ${{ env.WORKING_DIRECTORY }}
           soft_fail: true # optional: do not return an error code if there are failed checks
           # check: CKV_AWS_1 # optional: run only a specific check_id. can be comma separated list
           # skip_check: CKV_AWS_2 # optional: skip a specific check_id. can be comma separated list
