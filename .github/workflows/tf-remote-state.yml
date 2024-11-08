@@ -81,10 +81,11 @@ jobs:
             echo $STORAGE_ACCOUNT_CONNECTION_STRING
 
             echo "🎯 Getting storage blob named: " ${{ vars.TF_BACKEND_KEY }}
-            STORAGE_BLOB_EXISTS=$(az storage blob exists --account-key $STORAGE_ACCOUNT_KEY --account-name ${{ vars.TF_STORAGE_ACCOUNT }} --container-name ${{ vars.TF_BACKEND_CONTAINER }} --name ${{ vars.TF_BACKEND_KEY }})
+            STORAGE_BLOB_EXISTS=$(az storage blob exists --account-name ${{ vars.TF_STORAGE_ACCOUNT }} --container-name ${{ vars.TF_BACKEND_CONTAINER }} --name ${{ vars.TF_BACKEND_KEY }})
             if [ $STORAGE_BLOB_EXISTS == "false" ]; then
-              echo "FALSE"
-            #   echo "Storage blob not found. Creating..."
+              echo ""
+              echo "Storage blob not found. Creating..."
+
 
             # # generate backend.tf file
             # cd ${{ env.WORKING_DIRECTOR }}
