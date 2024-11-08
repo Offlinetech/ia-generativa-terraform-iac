@@ -80,8 +80,8 @@ jobs:
             STORAGE_ACCOUNT_CONNECTION_STRING=$(az storage account show-connection-string --resource-group ${{ vars.TF_RESOURCE_GROUP }}  --name ${{ vars.TF_STORAGE_ACCOUNT }} --query "connectionString"  -o tsv)
             echo $STORAGE_ACCOUNT_CONNECTION_STRING
 
-            echo "🎯 Getting storage blob named: " ${{ vars.BACKEND_KEY }}
-            STORAGE_BLOB_EXISTS=$(az storage blob exists --account-key $STORAGE_ACCOUNT_KEY --auth-mode login --container-name ${{ vars.TF_BACKEND_CONTAINER }} --name ${{ vars.BACKEND_KEY }})
+            echo "🎯 Getting storage blob named: " ${{ vars.TF_BACKEND_KEY }}
+            STORAGE_BLOB_EXISTS=$(az storage blob exists --account-key $STORAGE_ACCOUNT_KEY --auth-mode login --container-name ${{ vars.TF_BACKEND_CONTAINER }} --name ${{ vars.TF_BACKEND_KEY }})
  
             # if [ $STORAGE_BLOB_EXISTS == "false" ]; then
             #   echo ""
